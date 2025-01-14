@@ -23,9 +23,10 @@ $mail = new PHPMailer();
 try {
     $mail->isSMTP();
     $mail->Mailer = "smtp";
-    $mail->SMTPDebug = 2; // Debug level (0 = no output, 1 = commands, 2 = full)
+    $mail->SMTPDebug = 3;
+    $mail->Debugoutput = 'html';
     $mail->SMTPAuth = true;
-    $mail->Timeout = 30; // Connection timeout
+    $mail->Timeout = 30;
     $mail->SMTPSecure = getenv('SMTP_SECURE') ?: 'tls';
     $mail->Port = getenv('SMTP_PORT') ?: 465;
     $mail->Host = getenv('SMTP_HOST') ?: 'mail.levon.codes';
