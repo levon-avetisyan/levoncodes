@@ -1,57 +1,71 @@
 <?php
-// Файлы PHPMailer
-// PHPMailer
+// Import PHPMailer classes
 require '/home/levoncodes/public_html/vendor/phpmailer/phpmailer/src/PHPMailer.php';
 require '/home/levoncodes/public_html/vendor/phpmailer/phpmailer/src/SMTP.php';
 require '/home/levoncodes/public_html/vendor/phpmailer/phpmailer/src/Exception.php';
-// Variables
-$name = $_POST['name'];
-$email = $_POST['email'];
-$message = $_POST['message'];
-// Settings
+
 use PHPMailer\PHPMailer\PHPMailer;
+
+// Load environment variables
+require '/home/levoncodes/public_html/env.php';
+
+// Validate and sanitize input
+$name = filter_var($_POST['name'] ?? '', FILTER_SANITIZE_STRING);
+$email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
+$message = htmlspecialchars($_POST['message'] ?? '', ENT_QUOTES, 'UTF-8');
+
+if (!$email || !$name || !$message) {
+    die('Invalid input data.');
+}
+
+// Initialize PHPMailer
 $mail = new PHPMailer();
-$mail->isSMTP();
-$mail->Mailer = "smtp";
-$mail->SMTPDebug = 1;
-$mail->SMTPAuth = true;
-$mail->SMTPSecure = 'tls';
-$mail->Port = 587;
-$mail->Host = 'smtp.gmail.com';
-$mail->Username = "mailer@levon.codes";
-$mail->Password = "28kI])W8Twp1";
-$mail->isHTML(true);
-$mail->CharSet = 'UTF-8';
-$mail->setFrom('mailer@levon.codes');
-$mail->addAddress('levon.s.avetisyan@gmail.com');
-$mail->isHTML(true);
-$mail->Subject = 'Message from levon.codes contact form';
-$mail->Body = $message;
-$mail->AltBody = "This message uses plain text!";
-// File attachment
-if (array_key_exists('userfile', $_FILES)) {
-    // Create a message
-    $mail = new PHPMailer;
-    $mail->setFrom('mailer@levon.codes');
+try {
+    $mail->isSMTP();
+    $mail->Mailer = "smtp";
+    $mail->SMTPDebug = 0; // Use 1 or 2 for debugging
+    $mail->SMTPAuth = true;
+    $mail->SMTPSecure = getenv('SMTP_SECURE') ?: 'tls';
+    $mail->Port = getenv('SMTP_PORT') ?: 587;
+    $mail->Host = getenv('SMTP_HOST') ?: 'smtp.gmail.com';
+    $mail->Username = getenv('SMTP_USERNAME');
+    $mail->Password = getenv('SMTP_PASSWORD');
+    $mail->isHTML(true);
+    $mail->CharSet = 'UTF-8';
+
+    // Set email details
+    $mail->setFrom(getenv('SMTP_USERNAME'), 'Levon Codes');
     $mail->addAddress('levon.s.avetisyan@gmail.com');
     $mail->Subject = 'Message from levon.codes contact form';
-    $mail->Body = "Message: {$message} Name: {$name} Email: {$email}";
-    $mail->AltBody = "This message uses plain text!";
-    
-    // Attach multiple files one by one
-    for ($ct = 0; $ct < count($_FILES['userfile']['tmp_name']); $ct++) {
-        $uploadfile = tempnam(sys_get_temp_dir(), hash('sha256', $_FILES['userfile']['name'][$ct]));
-        $filename = $_FILES['userfile']['name'][$ct];
-        if (move_uploaded_file($_FILES['userfile']['tmp_name'][$ct], $uploadfile)) {
-            $mail->addAttachment($uploadfile, $filename);
-        } else {
-//            $msg .= 'Failed to move file to ' . $uploadfile;
+    $mail->Body = "Message: {$message}<br>Name: {$name}<br>Email: {$email}";
+    $mail->AltBody = "Message: {$message}\nName: {$name}\nEmail: {$email}";
+
+    // Handle file attachments
+    if (!empty($_FILES['userfile']['tmp_name'])) {
+        for ($ct = 0; $ct < count($_FILES['userfile']['tmp_name']); $ct++) {
+            $tmpName = $_FILES['userfile']['tmp_name'][$ct];
+            $fileName = basename($_FILES['userfile']['name'][$ct]);
+
+            // Validate file type and size
+            $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+            $maxFileSize = 2 * 1024 * 1024; // 2 MB
+
+            if (in_array(mime_content_type($tmpName), $allowedTypes) && filesize($tmpName) <= $maxFileSize) {
+                $uploadFile = tempnam(sys_get_temp_dir(), hash('sha256', $fileName));
+                if (move_uploaded_file($tmpName, $uploadFile)) {
+                    $mail->addAttachment($uploadFile, $fileName);
+                }
+            }
         }
     }
+
+    // Send email
     if (!$mail->send()) {
-        $msg .= "Mailer Error: " . $mail->ErrorInfo;
-    } else {
-        $msg .= "ok";
+        throw new Exception('Mail not sent: ' . $mail->ErrorInfo);
     }
+
+    echo 'Message sent successfully!';
+} catch (Exception $e) {
+    echo 'Error: ' . $e->getMessage();
 }
 ?>
