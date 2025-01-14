@@ -18,8 +18,7 @@ if (!$email || !$name || !$message) {
 $mail = new PHPMailer();
 try {
     $mail->isSMTP();
-    $mail->SMTPDebug = 3;
-    $mail->Debugoutput = 'html';
+    $mail->SMTPDebug = 0; // Disable debugging for production
     $mail->SMTPAuth = true;
     $mail->Timeout = 30;
     $mail->SMTPSecure = getenv('SMTP_SECURE') ?: 'ssl';
@@ -33,8 +32,10 @@ try {
     $mail->setFrom(getenv('SMTP_USERNAME'), 'Levon Codes');
     $mail->addAddress('levon.s.avetisyan@gmail.com');
     $mail->Subject = 'Message from levon.codes contact form';
-    $mail->Body = "Message: {$message}<br>Name: {$name}<br>Email: {$email}";
-    $mail->AltBody = "Message: {$message}\nName: {$name}\nEmail: {$email}";
+
+    // Updated email body and alt body
+    $mail->Body = "Email: {$email}<br>Name: {$name}<br>Message: {$message}";
+    $mail->AltBody = "Email: {$email}\nName: {$name}\nMessage: {$message}";
 
     // Handle attachments
     if (!empty($_FILES['userfile']['tmp_name'][0])) {
@@ -44,7 +45,6 @@ try {
             $fileName = basename($_FILES['userfile']['name'][$ct]);
             $fileMimeType = finfo_file($finfo, $tmpName);
 
-            // Validate file type and size
             $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
             $maxFileSize = 2 * 1024 * 1024;
 
