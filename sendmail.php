@@ -42,21 +42,24 @@ try {
 
     // Handle file attachments
     if (!empty($_FILES['userfile']['tmp_name'])) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE); // Open file info resource
         for ($ct = 0; $ct < count($_FILES['userfile']['tmp_name']); $ct++) {
             $tmpName = $_FILES['userfile']['tmp_name'][$ct];
             $fileName = basename($_FILES['userfile']['name'][$ct]);
 
             // Validate file type and size
+            $fileMimeType = finfo_file($finfo, $tmpName); // Get MIME type
             $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
             $maxFileSize = 2 * 1024 * 1024; // 2 MB
 
-            if (in_array(mime_content_type($tmpName), $allowedTypes) && filesize($tmpName) <= $maxFileSize) {
+            if (in_array($fileMimeType, $allowedTypes) && filesize($tmpName) <= $maxFileSize) {
                 $uploadFile = tempnam(sys_get_temp_dir(), hash('sha256', $fileName));
                 if (move_uploaded_file($tmpName, $uploadFile)) {
                     $mail->addAttachment($uploadFile, $fileName);
                 }
             }
         }
+        finfo_close($finfo); // Close file info resource
     }
 
     // Send email
