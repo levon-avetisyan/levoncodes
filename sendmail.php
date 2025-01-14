@@ -25,9 +25,9 @@ try {
     $mail->Mailer = "smtp";
     $mail->SMTPDebug = 0; // Use 1 or 2 for debugging
     $mail->SMTPAuth = true;
-    $mail->SMTPSecure = getenv('SMTP_SECURE') ?: 'tls';
-    $mail->Port = getenv('SMTP_PORT') ?: 587;
-    $mail->Host = getenv('SMTP_HOST') ?: 'smtp.gmail.com';
+    $mail->SMTPSecure = getenv('SMTP_SECURE');
+    $mail->Port = getenv('SMTP_PORT');
+    $mail->Host = getenv('SMTP_HOST');
     $mail->Username = getenv('SMTP_USERNAME');
     $mail->Password = getenv('SMTP_PASSWORD');
     $mail->isHTML(true);
