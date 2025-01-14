@@ -7,7 +7,7 @@ require '/home/levoncodes/public_html/vendor/phpmailer/phpmailer/src/Exception.p
 use PHPMailer\PHPMailer\PHPMailer;
 
 // Load environment variables
-require '/home/levoncodes/public_html/env.php';
+require '/home/levoncodes/env.php';
 
 // Validate and sanitize input
 $name = filter_var($_POST['name'] ?? '', FILTER_SANITIZE_STRING);
