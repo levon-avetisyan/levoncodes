@@ -1,15 +1,12 @@
 <?php
-// Import PHPMailer classes
 require '/home/levoncodes/public_html/vendor/phpmailer/phpmailer/src/PHPMailer.php';
 require '/home/levoncodes/public_html/vendor/phpmailer/phpmailer/src/SMTP.php';
 require '/home/levoncodes/public_html/vendor/phpmailer/phpmailer/src/Exception.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 
-// Load environment variables
-require '/home/levoncodes/env.php'; // Updated path to env.php
+require '/home/levoncodes/env.php';
 
-// Validate and sanitize input
 $name = filter_var($_POST['name'] ?? '', FILTER_SANITIZE_STRING);
 $email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
 $message = htmlspecialchars($_POST['message'] ?? '', ENT_QUOTES, 'UTF-8');
@@ -18,16 +15,14 @@ if (!$email || !$name || !$message) {
     die('Invalid input data.');
 }
 
-// Initialize PHPMailer
 $mail = new PHPMailer();
 try {
     $mail->isSMTP();
-    $mail->Mailer = "smtp";
     $mail->SMTPDebug = 3;
     $mail->Debugoutput = 'html';
     $mail->SMTPAuth = true;
     $mail->Timeout = 30;
-    $mail->SMTPSecure = getenv('SMTP_SECURE') ?: 'tls';
+    $mail->SMTPSecure = getenv('SMTP_SECURE') ?: 'ssl';
     $mail->Port = getenv('SMTP_PORT') ?: 465;
     $mail->Host = getenv('SMTP_HOST') ?: 'mail.levon.codes';
     $mail->Username = getenv('SMTP_USERNAME');
@@ -40,6 +35,27 @@ try {
     $mail->Subject = 'Message from levon.codes contact form';
     $mail->Body = "Message: {$message}<br>Name: {$name}<br>Email: {$email}";
     $mail->AltBody = "Message: {$message}\nName: {$name}\nEmail: {$email}";
+
+    // Handle attachments
+    if (!empty($_FILES['userfile']['tmp_name'][0])) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        for ($ct = 0; $ct < count($_FILES['userfile']['tmp_name']); $ct++) {
+            $tmpName = $_FILES['userfile']['tmp_name'][$ct];
+            $fileName = basename($_FILES['userfile']['name'][$ct]);
+            $fileMimeType = finfo_file($finfo, $tmpName);
+
+            // Validate file type and size
+            $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+            $maxFileSize = 2 * 1024 * 1024;
+
+            if (in_array($fileMimeType, $allowedTypes) && filesize($tmpName) <= $maxFileSize) {
+                $mail->addAttachment($tmpName, $fileName);
+            } else {
+                echo "Invalid file: {$fileName}";
+            }
+        }
+        finfo_close($finfo);
+    }
 
     if (!$mail->send()) {
         throw new Exception('Mail not sent: ' . $mail->ErrorInfo);
